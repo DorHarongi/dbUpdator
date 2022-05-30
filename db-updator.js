@@ -33,35 +33,71 @@ function updateDb(usersCollection) {
                                 in: {
                                     villageName: "$$item.villageName",
                                     resourcesAmounts: {
-                                        woodAmount: {
-                                            $add: [{
-                                                $multiply: [
-                                                    "$$item.resourcesWorkers.woodWorkers",
-                                                    utils.singleWorkerProductionSpeedPerSecond
-                                                ]
-                                            },
-                                            { $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] },
-                                            "$$item.resourcesAmounts.woodAmount"]
+                                        woodAmount: 
+                                        {
+                                            '$min': [
+                                                {
+                                                    $add: [
+                                                        {
+                                                            $multiply: [
+                                                                "$$item.resourcesWorkers.woodWorkers",
+                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                            ]
+                                                        },
+                                                        { 
+                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] 
+                                                        },
+                                                        "$$item.resourcesAmounts.woodAmount"
+                                                    ]
+                                                }
+                                                ,{ 
+                                                    $arrayElemAt: [utils.warehouseStorageByLevel,  "$$item.buildingsLevels.woodWarehouseLevel"]
+                                                }
+                                            ]
                                         },
-                                        stonesAmount: {
-                                            $add: [{
-                                                $multiply: [
-                                                    "$$item.resourcesWorkers.stoneWorkers",
-                                                    utils.singleWorkerProductionSpeedPerSecond
-                                                ]
-                                            },
-                                            { $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.stoneMineLevel" ] },
-                                            "$$item.resourcesAmounts.stonesAmount"]
+                                        stonesAmount: 
+                                        {
+                                            '$min': [
+                                                {
+                                                    $add: [
+                                                        {
+                                                            $multiply: [
+                                                                "$$item.resourcesWorkers.stoneWorkers",
+                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                            ]
+                                                        },
+                                                        {
+                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.stoneMineLevel" ]
+                                                        },
+                                                        "$$item.resourcesAmounts.stonesAmount"
+                                                    ]
+                                                }
+                                                ,{
+                                                    $arrayElemAt: [utils.warehouseStorageByLevel,  "$$item.buildingsLevels.stoneWarehouseLevel"]
+                                                }
+                                            ]
                                         },
-                                        cropAmount: {
-                                            $add: [{
-                                                $multiply: [
-                                                    "$$item.resourcesWorkers.cropWorkers",
-                                                    utils.singleWorkerProductionSpeedPerSecond
-                                                ]
-                                            },
-                                            { $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.cropFarmLevel" ] },
-                                            "$$item.resourcesAmounts.cropAmount"]
+                                        cropAmount: 
+                                        {
+                                            '$min': [
+                                                {
+                                                    $add: [
+                                                        {
+                                                            $multiply: [
+                                                                "$$item.resourcesWorkers.cropWorkers",
+                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                            ]
+                                                        },
+                                                        { 
+                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.cropFarmLevel" ] 
+                                                        },
+                                                        "$$item.resourcesAmounts.cropAmount"
+                                                    ]
+                                                },
+                                                ,{
+                                                    $arrayElemAt: [utils.warehouseStorageByLevel,  "$$item.buildingsLevels.cropWarehouseLevel"]
+                                                }
+                                            ]
                                         },
                                     },
                                     buildingsLevels: "$$item.buildingsLevels",
