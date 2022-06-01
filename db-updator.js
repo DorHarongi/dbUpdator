@@ -67,7 +67,7 @@ function updateDb(usersCollection) {
                                                             ]
                                                         },
                                                         {
-                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.stoneMineLevel" ]
+                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.stoneMineLevel" ]
                                                         },
                                                         "$$item.resourcesAmounts.stonesAmount"
                                                     ]
@@ -89,7 +89,7 @@ function updateDb(usersCollection) {
                                                             ]
                                                         },
                                                         { 
-                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.cropFarmLevel" ] 
+                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.cropFarmLevel" ] 
                                                         },
                                                         "$$item.resourcesAmounts.cropAmount"
                                                     ]
