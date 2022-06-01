@@ -45,7 +45,7 @@ function updateDb(usersCollection) {
                                                             ]
                                                         },
                                                         { 
-                                                            $arrayElemAt: [utils.factoriesProductionLevelByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] 
+                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] 
                                                         },
                                                         "$$item.resourcesAmounts.woodAmount"
                                                     ]
