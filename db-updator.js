@@ -107,6 +107,16 @@ function updateDb(usersCollection) {
                                     clanTroops: "$$item.clanTroops"
                                 }
                             }
+                        },
+                        energy: {
+                            '$min': [
+                                {
+                                    $add: [
+                                        "$energy",
+                                        utils.energyProductionSpeedPerSecond
+                                    ]
+                                },
+                                ,utils.maxEnergy]
                         }
                     }
                 }
