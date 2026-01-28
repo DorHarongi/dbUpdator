@@ -1,0 +1,12 @@
+{
+  "name": "db-updator",
+  "version": "1.0.0",
+  "description": "Database updater service",
+  "main": "db-updator.js",
+  "scripts": {
+    "start": "node db-updator.js"
+  },
+  "dependencies": {
+    "mongodb": "^4.6.0"
+  }
+}
