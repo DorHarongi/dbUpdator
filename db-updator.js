@@ -104,7 +104,9 @@ function updateDb(usersCollection) {
                                     population: "$$item.population",
                                     resourcesWorkers: "$$item.resourcesWorkers",
                                     troops: "$$item.troops",
-                                    clanTroops: "$$item.clanTroops"
+                                    clanTroops: "$$item.clanTroops",
+                                    location: "$$item.location",
+                                    supportSent: "$$item.supportSent"
                                 }
                             }
                         },
