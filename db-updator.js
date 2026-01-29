@@ -22,7 +22,7 @@ async function startWorkFlow() {
 
 function updateDb(usersCollection) {
     setInterval(async () => {
-        usersCollection.update({},
+        usersCollection.updateMany({},
             [
                 {
                     $set: {
@@ -122,10 +122,7 @@ function updateDb(usersCollection) {
                         }
                     }
                 }
-            ],
-            {
-                multi: true
-            })
+            ])
     }, 1000)
 }
 
