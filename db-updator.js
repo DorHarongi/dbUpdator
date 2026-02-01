@@ -1,16 +1,33 @@
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const utils = require('utils');
+const http = require('http');
 
+// Bind to a port to prevent multiple instances
+const LOCK_PORT = 3999;
+const lockServer = http.createServer((req, res) => {
+    res.writeHead(200);
+    res.end('db-updator is running');
+});
+
+lockServer.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`ERROR: Another instance of db-updator is already running on port ${LOCK_PORT}`);
+        console.error('Exiting to prevent duplicate updates...');
+        process.exit(1);
+    }
+    throw err;
+});
+
+lockServer.listen(LOCK_PORT, () => {
+    console.log(`db-updator lock acquired on port ${LOCK_PORT}`);
+    startWorkFlow();
+});
 
 // Connection url
 const url = 'mongodb://localhost:27017/';
 // Database Name
 const dbName = 'users';
-
-
-
-startWorkFlow();
 
 async function startWorkFlow() {
     let dbConnection = await connectToDB();
