@@ -3,6 +3,10 @@ const MongoClient = mongodb.MongoClient;
 const utils = require('utils');
 const http = require('http');
 
+// Vanguard trait bonus multipliers by academy level (1 + bonus percentage)
+// Index 0-2: 1.0 (no bonus), Level 3: 1.07, Level 4: 1.09, ... Level 10: 1.25
+const vanguardMultiplierByLevel = [1.0, 1.0, 1.0, 1.07, 1.09, 1.11, 1.13, 1.15, 1.17, 1.21, 1.25];
+
 // Bind to a port to prevent multiple instances
 const LOCK_PORT = 3999;
 const lockServer = http.createServer((req, res) => {
@@ -55,14 +59,32 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
+                                                        // Base production multiplied by Vanguard bonus (if applicable)
                                                         {
                                                             $multiply: [
-                                                                "$$item.resourcesWorkers.woodWorkers",
-                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                // Base production: workers + factory
+                                                                {
+                                                                    $add: [
+                                                                        {
+                                                                            $multiply: [
+                                                                                "$$item.resourcesWorkers.woodWorkers",
+                                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                            ]
+                                                                        },
+                                                                        { 
+                                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] 
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                {
+                                                                    $cond: {
+                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
+                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
+                                                                        else: 1.0
+                                                                    }
+                                                                }
                                                             ]
-                                                        },
-                                                        { 
-                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.woodFactoryLevel" ] 
                                                         },
                                                         "$$item.resourcesAmounts.woodAmount"
                                                     ]
@@ -77,14 +99,32 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
+                                                        // Base production multiplied by Vanguard bonus (if applicable)
                                                         {
                                                             $multiply: [
-                                                                "$$item.resourcesWorkers.stoneWorkers",
-                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                // Base production: workers + factory
+                                                                {
+                                                                    $add: [
+                                                                        {
+                                                                            $multiply: [
+                                                                                "$$item.resourcesWorkers.stoneWorkers",
+                                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.stoneMineLevel" ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                {
+                                                                    $cond: {
+                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
+                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
+                                                                        else: 1.0
+                                                                    }
+                                                                }
                                                             ]
-                                                        },
-                                                        {
-                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.stoneMineLevel" ]
                                                         },
                                                         "$$item.resourcesAmounts.stonesAmount"
                                                     ]
@@ -99,14 +139,32 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
+                                                        // Base production multiplied by Vanguard bonus (if applicable)
                                                         {
                                                             $multiply: [
-                                                                "$$item.resourcesWorkers.cropWorkers",
-                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                // Base production: workers + factory
+                                                                {
+                                                                    $add: [
+                                                                        {
+                                                                            $multiply: [
+                                                                                "$$item.resourcesWorkers.cropWorkers",
+                                                                                utils.singleWorkerProductionSpeedPerSecond
+                                                                            ]
+                                                                        },
+                                                                        { 
+                                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.cropFarmLevel" ] 
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                {
+                                                                    $cond: {
+                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
+                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
+                                                                        else: 1.0
+                                                                    }
+                                                                }
                                                             ]
-                                                        },
-                                                        { 
-                                                            $arrayElemAt: [utils.factoriesProductionSpeedByLevel, "$$item.buildingsLevels.cropFarmLevel" ] 
                                                         },
                                                         "$$item.resourcesAmounts.cropAmount"
                                                     ]
@@ -123,7 +181,8 @@ function updateDb(usersCollection) {
                                     troops: "$$item.troops",
                                     clanTroops: "$$item.clanTroops",
                                     location: "$$item.location",
-                                    supportSent: "$$item.supportSent"
+                                    supportSent: "$$item.supportSent",
+                                    trait: "$$item.trait"
                                 }
                             }
                         },
@@ -132,10 +191,22 @@ function updateDb(usersCollection) {
                                 {
                                     $add: [
                                         "$energy",
-                                        utils.energyProductionSpeedPerSecond
+                                        // Energy production with Vanguard bonus (uses first village's trait)
+                                        {
+                                            $multiply: [
+                                                utils.energyProductionSpeedPerSecond,
+                                                {
+                                                    $cond: {
+                                                        if: { $eq: [{ $arrayElemAt: ["$villages.trait", 0] }, "vanguard"] },
+                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, { $arrayElemAt: ["$villages.buildingsLevels.academyLevel", 0] }] },
+                                                        else: 1.0
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     ]
                                 },
-                                ,utils.maxEnergy]
+                                utils.maxEnergy]
                         }
                     }
                 }
