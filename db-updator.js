@@ -3,10 +3,6 @@ const MongoClient = mongodb.MongoClient;
 const utils = require('utils');
 const http = require('http');
 
-// Vanguard trait bonus multipliers by academy level (1 + bonus percentage)
-// Index 0-2: 1.0 (no bonus), Level 3: 1.07, Level 4: 1.09, ... Level 10: 1.25
-const vanguardMultiplierByLevel = [1.0, 1.0, 1.0, 1.07, 1.09, 1.11, 1.13, 1.15, 1.17, 1.21, 1.25];
-
 // Bind to a port to prevent multiple instances
 const LOCK_PORT = 3999;
 const lockServer = http.createServer((req, res) => {
@@ -28,16 +24,34 @@ lockServer.listen(LOCK_PORT, () => {
     startWorkFlow();
 });
 
-// Connection url
+// Connection url (no database in string; we use multiple DBs per server)
 const url = 'mongodb://localhost:27017/';
-// Database Name
-const dbName = 'users';
+const defaultDbName = 'users';
+const accountsDbName = 'pasiflora_accounts';
+const serverDbPrefix = 'pasiflora_server_';
 
 async function startWorkFlow() {
-    let dbConnection = await connectToDB();
-    if (dbConnection) {
-        let usersCollection = dbConnection.collection('users');
-        updateDb(usersCollection)
+    const client = await connectToDB();
+    if (!client) return;
+
+    // Multi-server: get active server IDs from accounts DB, or fallback to single server 1
+    let serverIds = [1];
+    try {
+        const accountsDb = client.db(accountsDbName);
+        const servers = await accountsDb.collection('servers').find({ status: 'active' }).toArray();
+        if (servers && servers.length > 0) {
+            serverIds = servers.map((s) => s.serverId).filter((id) => id != null);
+        }
+    } catch (e) {
+        console.log('No accounts/servers list found, using single server 1');
+    }
+
+    for (const serverId of serverIds) {
+        const dbName = serverId === 1 ? defaultDbName : serverDbPrefix + serverId;
+        const db = client.db(dbName);
+        const usersCollection = db.collection('users');
+        updateDb(usersCollection);
+        console.log('db-updator: running updates for server ' + serverId + ' (db: ' + dbName + ')');
     }
 }
 
@@ -59,7 +73,7 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
-                                                        // Base production multiplied by Vanguard bonus (if applicable)
+                                                        // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
                                                                 // Base production: workers + factory
@@ -76,13 +90,21 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
-                                                                    $cond: {
-                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
-                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
-                                                                        else: 1.0
-                                                                    }
+                                                                    $add: [
+                                                                        1,
+                                                                        {
+                                                                            $switch: {
+                                                                                branches: [
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "I"] }, then: 0.05 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "II"] }, then: 0.10 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "III"] }, then: 0.15 },
+                                                                                ],
+                                                                                default: 0,
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ]
                                                         },
@@ -99,7 +121,7 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
-                                                        // Base production multiplied by Vanguard bonus (if applicable)
+                                                        // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
                                                                 // Base production: workers + factory
@@ -116,13 +138,21 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
-                                                                    $cond: {
-                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
-                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
-                                                                        else: 1.0
-                                                                    }
+                                                                    $add: [
+                                                                        1,
+                                                                        {
+                                                                            $switch: {
+                                                                                branches: [
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "I"] }, then: 0.05 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "II"] }, then: 0.10 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "III"] }, then: 0.15 },
+                                                                                ],
+                                                                                default: 0,
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ]
                                                         },
@@ -139,7 +169,7 @@ function updateDb(usersCollection) {
                                             '$min': [
                                                 {
                                                     $add: [
-                                                        // Base production multiplied by Vanguard bonus (if applicable)
+                                                        // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
                                                                 // Base production: workers + factory
@@ -156,13 +186,21 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Vanguard multiplier (1.0 if not vanguard)
+                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
-                                                                    $cond: {
-                                                                        if: { $eq: ["$$item.trait", "vanguard"] },
-                                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, "$$item.buildingsLevels.academyLevel"] },
-                                                                        else: 1.0
-                                                                    }
+                                                                    $add: [
+                                                                        1,
+                                                                        {
+                                                                            $switch: {
+                                                                                branches: [
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "I"] }, then: 0.05 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "II"] }, then: 0.10 },
+                                                                                    { case: { $eq: ["$$item.skills.goldRush", "III"] }, then: 0.15 },
+                                                                                ],
+                                                                                default: 0,
+                                                                            }
+                                                                        }
+                                                                    ]
                                                                 }
                                                             ]
                                                         },
@@ -182,7 +220,9 @@ function updateDb(usersCollection) {
                                     clanTroops: "$$item.clanTroops",
                                     location: "$$item.location",
                                     supportSent: "$$item.supportSent",
-                                    trait: "$$item.trait"
+                                    skills: "$$item.skills",
+                                    aliveSpies: "$$item.aliveSpies",
+                                    spyDeathTimestamps: "$$item.spyDeathTimestamps"
                                 }
                             }
                         },
@@ -191,16 +231,24 @@ function updateDb(usersCollection) {
                                 {
                                     $add: [
                                         "$energy",
-                                        // Energy production with Vanguard bonus (uses first village's trait)
+                                        // Energy production with Adrenaline Surge skill (uses first village's skills)
                                         {
                                             $multiply: [
                                                 utils.energyProductionSpeedPerSecond,
                                                 {
-                                                    $cond: {
-                                                        if: { $eq: [{ $arrayElemAt: ["$villages.trait", 0] }, "vanguard"] },
-                                                        then: { $arrayElemAt: [vanguardMultiplierByLevel, { $arrayElemAt: ["$villages.buildingsLevels.academyLevel", 0] }] },
-                                                        else: 1.0
-                                                    }
+                                                    $add: [
+                                                        1,
+                                                        {
+                                                            $switch: {
+                                                                branches: [
+                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "I"] }, then: 0.05 },
+                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "II"] }, then: 0.10 },
+                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "III"] }, then: 0.15 },
+                                                                ],
+                                                                default: 0,
+                                                            }
+                                                        }
+                                                    ]
                                                 }
                                             ]
                                         }
@@ -215,15 +263,14 @@ function updateDb(usersCollection) {
 }
 
 async function connectToDB() {
-
-    let mongoClient = await MongoClient.connect(url + dbName);
-    if (mongoClient == undefined) {
-        console.log("Mongo down. trying again...")
-        await this.connect();
-    }
-    else {
-        console.log("Connected to db succesfully");
-        return this.connection = mongoClient.db('users');
+    try {
+        const mongoClient = await MongoClient.connect(url);
+        console.log('Connected to MongoDB successfully');
+        return mongoClient;
+    } catch (err) {
+        console.log('Mongo down. Retrying in 5s...', err.message);
+        await new Promise((r) => setTimeout(r, 5000));
+        return connectToDB();
     }
 }
 

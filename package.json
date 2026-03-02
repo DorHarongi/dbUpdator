@@ -7,6 +7,6 @@
     "start": "node db-updator.js"
   },
   "dependencies": {
-    "mongodb": "^4.6.0"
+    "mongodb": "^7.0.0"
   }
 }
