@@ -2,6 +2,24 @@ const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const utils = require('utils');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+function getMongoUrl() {
+    const credPath = path.join(process.cwd(), 'mongo-credentials.txt');
+    let password = '<password-here>';
+    try {
+        const content = fs.readFileSync(credPath, 'utf8');
+        const match = content.match(/password:\s*(.+)/);
+        if (match && match[1].trim() && match[1].trim() !== '<password-here>') {
+            password = match[1].trim();
+        }
+    } catch (_) { /* use no-auth fallback */ }
+    if (password === '<password-here>') {
+        return 'mongodb://localhost:27017/';
+    }
+    return `mongodb://pasiflora:${encodeURIComponent(password)}@localhost:27017/?authSource=admin`;
+}
 
 // Bind to a port to prevent multiple instances
 const LOCK_PORT = 3999;
@@ -24,8 +42,8 @@ lockServer.listen(LOCK_PORT, () => {
     startWorkFlow();
 });
 
-// Connection url (no database in string; we use multiple DBs per server)
-const url = 'mongodb://localhost:27017/';
+// Connection url (reads password from mongo-credentials.txt)
+const url = getMongoUrl();
 const accountsDbName = 'pasiflora_accounts';
 const serverDbPrefix = 'pasiflora_server_';
 
