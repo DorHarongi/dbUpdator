@@ -26,7 +26,6 @@ lockServer.listen(LOCK_PORT, () => {
 
 // Connection url (no database in string; we use multiple DBs per server)
 const url = 'mongodb://localhost:27017/';
-const defaultDbName = 'users';
 const accountsDbName = 'pasiflora_accounts';
 const serverDbPrefix = 'pasiflora_server_';
 
@@ -47,7 +46,7 @@ async function startWorkFlow() {
     }
 
     for (const serverId of serverIds) {
-        const dbName = serverId === 1 ? defaultDbName : serverDbPrefix + serverId;
+        const dbName = serverDbPrefix + serverId;
         const db = client.db(dbName);
         const usersCollection = db.collection('users');
         updateDb(usersCollection);
