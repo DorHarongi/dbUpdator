@@ -74,7 +74,7 @@ async function startWorkFlow() {
 
 function updateDb(usersCollection) {
     setInterval(async () => {
-        usersCollection.updateMany({},
+        usersCollection.updateMany({ isDeleted: { $ne: true } },
             [
                 {
                     $set: {
