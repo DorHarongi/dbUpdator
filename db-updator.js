@@ -237,6 +237,8 @@ function updateDb(usersCollection) {
                                     clanTroops: "$$item.clanTroops",
                                     location: "$$item.location",
                                     supportSent: "$$item.supportSent",
+                                    oasisTroopsSent: "$$item.oasisTroopsSent",
+                                    troopsInTransit: "$$item.troopsInTransit",
                                     skills: "$$item.skills",
                                     aliveSpies: "$$item.aliveSpies",
                                     spyDeathTimestamps: "$$item.spyDeathTimestamps"
