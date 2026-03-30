@@ -250,7 +250,7 @@ function updateDb(usersCollection) {
                                 {
                                     $add: [
                                         "$energy",
-                                        // Energy production with Adrenaline Surge skill (uses first village's skills)
+                                        // Energy production with Adrenaline Surge skill (stacks across all villages)
                                         {
                                             $multiply: [
                                                 utils.energyProductionSpeedPerSecond,
@@ -258,13 +258,24 @@ function updateDb(usersCollection) {
                                                     $add: [
                                                         1,
                                                         {
-                                                            $switch: {
-                                                                branches: [
-                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "I"] }, then: 0.05 },
-                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "II"] }, then: 0.10 },
-                                                                    { case: { $eq: [{ $arrayElemAt: ["$villages.skills.adrenalineSurge", 0] }, "III"] }, then: 0.15 },
-                                                                ],
-                                                                default: 0,
+                                                            $reduce: {
+                                                                input: "$villages",
+                                                                initialValue: 0,
+                                                                in: {
+                                                                    $add: [
+                                                                        "$$value",
+                                                                        {
+                                                                            $switch: {
+                                                                                branches: [
+                                                                                    { case: { $eq: ["$$this.skills.adrenalineSurge", "I"] }, then: 0.05 },
+                                                                                    { case: { $eq: ["$$this.skills.adrenalineSurge", "II"] }, then: 0.10 },
+                                                                                    { case: { $eq: ["$$this.skills.adrenalineSurge", "III"] }, then: 0.15 },
+                                                                                ],
+                                                                                default: 0,
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
                                                             }
                                                         }
                                                     ]
