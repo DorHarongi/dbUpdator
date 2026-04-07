@@ -67,13 +67,43 @@ async function startWorkFlow() {
         const dbName = serverDbPrefix + serverId;
         const db = client.db(dbName);
         const usersCollection = db.collection('users');
-        updateDb(usersCollection);
+        const relicsCollection = db.collection('relics');
+        updateDb(usersCollection, relicsCollection);
         console.log('db-updator: running updates for server ' + serverId + ' (db: ' + dbName + ')');
     }
 }
 
-function updateDb(usersCollection) {
+function updateDb(usersCollection, relicsCollection) {
+    let chaliceHolder = { username: null, villageName: null };
+
+    async function refreshChaliceHolder() {
+        try {
+            const relic = await relicsCollection.findOne({ relicId: 'chalice_of_ascension' });
+            chaliceHolder = {
+                username: relic?.holderUsername || null,
+                villageName: relic?.holderVillageName || null,
+            };
+        } catch (_) {}
+    }
+    refreshChaliceHolder();
+    setInterval(refreshChaliceHolder, 30000);
+
+    function chaliceBonusExpr() {
+        if (!chaliceHolder.username) return 0;
+        return {
+            $cond: [
+                { $and: [
+                    { $eq: ["$username", chaliceHolder.username] },
+                    { $eq: ["$$item.villageName", chaliceHolder.villageName] }
+                ]},
+                utils.RELIC_PRODUCTION_BONUS,
+                0
+            ]
+        };
+    }
+
     setInterval(async () => {
+        const chaliceBonus = chaliceBonusExpr();
         usersCollection.updateMany({ isDeleted: { $ne: true } },
             [
                 {
@@ -93,7 +123,6 @@ function updateDb(usersCollection) {
                                                         // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
-                                                                // Base production: workers + factory
                                                                 {
                                                                     $add: [
                                                                         {
@@ -107,7 +136,6 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
                                                                     $add: [
                                                                         1,
@@ -120,7 +148,8 @@ function updateDb(usersCollection) {
                                                                                 ],
                                                                                 default: 0,
                                                                             }
-                                                                        }
+                                                                        },
+                                                                        chaliceBonus
                                                                     ]
                                                                 }
                                                             ]
@@ -141,7 +170,6 @@ function updateDb(usersCollection) {
                                                         // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
-                                                                // Base production: workers + factory
                                                                 {
                                                                     $add: [
                                                                         {
@@ -155,7 +183,6 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
                                                                     $add: [
                                                                         1,
@@ -168,7 +195,8 @@ function updateDb(usersCollection) {
                                                                                 ],
                                                                                 default: 0,
                                                                             }
-                                                                        }
+                                                                        },
+                                                                        chaliceBonus
                                                                     ]
                                                                 }
                                                             ]
@@ -189,7 +217,6 @@ function updateDb(usersCollection) {
                                                         // Base production multiplied by Gold Rush skill (if applicable)
                                                         {
                                                             $multiply: [
-                                                                // Base production: workers + factory
                                                                 {
                                                                     $add: [
                                                                         {
@@ -203,7 +230,6 @@ function updateDb(usersCollection) {
                                                                         }
                                                                     ]
                                                                 },
-                                                                // Gold Rush multiplier based on skills.goldRush tier
                                                                 {
                                                                     $add: [
                                                                         1,
@@ -216,14 +242,15 @@ function updateDb(usersCollection) {
                                                                                 ],
                                                                                 default: 0,
                                                                             }
-                                                                        }
+                                                                        },
+                                                                        chaliceBonus
                                                                     ]
                                                                 }
                                                             ]
                                                         },
                                                         "$$item.resourcesAmounts.cropAmount"
                                                     ]
-                                                },
+                                                }
                                                 ,{
                                                     $arrayElemAt: [utils.warehouseStorageByLevel,  "$$item.buildingsLevels.cropWarehouseLevel"]
                                                 }
